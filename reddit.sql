@@ -3,7 +3,7 @@
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL,
-  password VARCHAR(60) NOT NULL, -- why 60??? ask me :)  // 60 because this will not be a password, but rather a hash value representing the password entered
+  password VARCHAR(60) NOT NULL, -- why 60??? ask me :)
   createdAt DATETIME NOT NULL,
   updatedAt DATETIME NOT NULL,
   UNIQUE KEY username (username)
@@ -20,4 +20,31 @@ CREATE TABLE posts (
   updatedAt DATETIME NOT NULL,
   KEY userId (userId), -- why did we add this here? ask me :)
   CONSTRAINT validUser FOREIGN KEY (userId) REFERENCES users (id) ON DELETE SET NULL
+);
+
+
+CREATE TABLE subreddits (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(30) NOT NULL,
+  description VARCHAR(200),
+  createdAt DATETIME NOT NULL,
+  updatedAt DATETIME NOT NULL,
+  UNIQUE KEY name (name)
+);
+
+ALTER TABLE reddit.posts
+ADD COLUMN subredditId INT,
+ADD FOREIGN KEY subreddit_fk(subredditId) REFERENCES subreddits(id) ON DELETE CASCADE;
+
+CREATE TABLE votes (
+  userId INT,
+  postId INT,
+  voteDirection TINYINT,
+  createdAt DATETIME NOT NULL,
+  updatedAt DATETIME NOT NULL,
+  PRIMARY KEY (userId, postId),
+  KEY userId (userId),
+  KEY postId (postId),
+  FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE,
+  FOREIGN KEY (postId) REFERENCES posts (id) ON DELETE CASCADE
 );
