@@ -53,6 +53,7 @@ class RedditAPI {
         therefore template strings make it very easy to write SQL queries that span multiple
         lines without having to manually split the string line by line.
          */
+         /*
         return this.conn.query(
             `
             SELECT id, title, url, userId, createdAt, updatedAt
@@ -60,6 +61,29 @@ class RedditAPI {
             ORDER BY createdAt DESC
             LIMIT 25`
         );
+        */
+        var result = this.conn.query(
+            `SELECT p.id AS PostId, p.title, p.url, p.createdAt AS PostCreation, p.updatedAt AS PostUpdate, p.userId, u.id AS USERID, u.username, u.createdAt AS UserCreation, u.updatedAt AS UserUpdate
+            FROM posts p
+            INNER JOIN users u ON p.userId = u.id`
+        );
+        
+        return result.map(function(post) {
+            return {
+                "id": post.PostId,
+                "title": post.title,
+                "url": post.url,
+                "createdAt": post.PostCreation,
+                "updatedAt": post.PostUpdate,
+                "userId": post.userId,
+                "user": {
+                    "id": post.USERID,
+                    "username": post.username,
+                    "createdAt": post.UserCreation,
+                    "updatedAt": post.UserUpdate
+                }
+            };
+        });
     }
 }
 

@@ -3,7 +3,7 @@
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL,
-  password VARCHAR(60) NOT NULL, -- why 60??? ask me :)
+  password VARCHAR(60) NOT NULL, -- why 60??? ask me :)  // 60 because this will not be a password, but rather a hash value representing the password entered
   createdAt DATETIME NOT NULL,
   updatedAt DATETIME NOT NULL,
   UNIQUE KEY username (username)
