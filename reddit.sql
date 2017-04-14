@@ -48,3 +48,17 @@ CREATE TABLE votes (
   FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (postId) REFERENCES posts (id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  userId INT,
+  postId INT,
+  parentId INT,
+  text VARCHAR(10000),
+  createdAt DATETIME NOT NULL,
+  updatedAt DATETIME NOT NULL,
+  FOREIGN KEY (userId) REFERENCES users (id) ON DELETE SET NULL,
+  FOREIGN KEY (userId) REFERENCES posts (id) ON DELETE SET NULL,
+  FOREIGN KEY (parentId) REFERENCES comments (id)
+);

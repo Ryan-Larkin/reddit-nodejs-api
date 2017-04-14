@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 var bcrypt = require('bcrypt-as-promised');
 var HASH_ROUNDS = 10;
 
@@ -33,7 +33,7 @@ class RedditAPI {
     }
 
     createPost(post) {
-        if (post.subredditId === 'null') {
+        if (post.subredditId == null) {
             return "There is no subreddit id";
         }
         
@@ -42,7 +42,7 @@ class RedditAPI {
                 `
                 INSERT INTO posts (userId, title, url, createdAt, updatedAt, subredditId)
                 VALUES (?, ?, ?, NOW(), NOW(), ?)`,
-                [post.userId, post.title, post.url, post.subredditid]
+                [post.userId, post.title, post.url, post.subredditId]
                 )
                 .then(result => {
                         return result.insertId;
@@ -65,15 +65,15 @@ class RedditAPI {
          
         var posts = this.conn.query(
             `
-            SELECT p.id AS pId, p.title, p.url, p.createdAt AS PostCreation, p.updatedAt AS PostUpdate, p.userId, 
-            u.id AS uId, u.username, u.createdAt AS UserCreation, u.updatedAt AS UserUpdate,
-            s.id AS sId, s.name AS subredditName, s.description, s.createdAt AS subredditCreation, s.updatedAt AS subredditUpdate,
-            v.postId AS vPId, v.userId AS vUId, SUM(v.voteDirection) AS voteScore
+            SELECT p.id AS PostsId, p.title AS PostTitle, p.url AS PostURL, p.createdAt AS PostCreation, p.updatedAt AS PostUpdate, p.userId AS PostsUserId, 
+            u.id AS UsersId, u.username AS Username, u.createdAt AS UserCreation, u.updatedAt AS UserUpdate,
+            s.id AS SubredditsId, s.name AS SubredditName, s.description AS SubredditDescription, s.createdAt AS subredditCreation, s.updatedAt AS subredditUpdate,
+            v.postId AS VotesPostId, v.userId AS VotesUserId, SUM(v.voteDirection) AS VoteScore
             FROM posts p
             INNER JOIN users u ON p.userId = u.id
             INNER JOIN subreddits s ON p.subredditId = s.id
-            INNER JOIN votes v ON p.id = v.postId
-            GROUP BY v.postId ORDER BY voteScore DESC`
+            LEFT JOIN votes v ON p.id = v.postId
+            GROUP BY vPId ORDER BY voteScore DESC`
             // Check query
     
             // Now that we have voting, we need to add the voteScore of each post by doing an extra JOIN to the votes table, grouping by postId, and doing a 
@@ -86,29 +86,29 @@ class RedditAPI {
         // Changes the output of the SQL query, into a nested array rather than a flat array
         return posts.map(function(post) {
             return {
-                "id": post.pId,
-                "title": post.title,
-                "url": post.url,
+                "id": post.PostsId,
+                "title": post.PostTitle,
+                "url": post.PostURL,
                 "createdAt": post.PostCreation,
                 "updatedAt": post.PostUpdate,
-                "userId": post.userId,
+                "userId": post.PostsUserId,
                 "user": {
-                    "id": post.uId,
-                    "username": post.username,
+                    "id": post.UsersId,
+                    "username": post.Username,
                     "createdAt": post.UserCreation,
                     "updatedAt": post.UserUpdate
                 },
                 "subreddit": {
-                    "id": post.sId,
-                    "name": post.subredditName,
-                    "description": post.description,
+                    "id": post.SubredditsId,
+                    "name": post.SubredditName,
+                    "description": post.SubredditDescription,
                     "createdAt": post.subredditCreation,
                     "updatedAt": post.subredditUpdate 
                 },
                 "votes": {
-                    "userId": post.vUId,
-                    "postId": post.vPId,
-                    "voteScore": post.voteScore
+                    "userId": post.VotesUserId,
+                    "postId": post.VotesPostId,
+                    "voteScore": post.VoteScore
                 }
             };
         });
@@ -151,37 +151,109 @@ class RedditAPI {
     
     }
         
+    createComment(comment) {
+        var parentId; 
+        if (comment.parentId === 'null') {
+            parentId = null;
+        }
+        return this.conn.query(
+            `
+            INSERT INTO comments (userId, postId, parentId, text, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, NOW(), NOW())`,
+            [comment.userId, comment.postId, parentId, comment.text])
+        .then(result => {
+            return result.insertId;
+        })
+        .catch(error => {
+            throw error;
+        });
+    }
     
+    getChildComments(parentId, levels) {
+        var query = this.conn.query(
+            `
+            SELECT id, text, createdAt, updatedAt
+            FROM comments
+            WHERE parentId = ` + parentId);
+        
+        return query.map(subcomments => {
+            return {
+                id: subcomments.id,
+                text: subcomments.text,
+                createdAt: subcomments.createdAt,
+                updatedAt: subcomments.updatedAt,
+                replies: this.getChildComments(subcomments.id, levels-1)
+            };
+        });
+    }
+    
+    getCommentsForPost(postId, levels) {
+        
+        var queryComments = this.conn.query(
+            `
+            SELECT id, text, createdAt, updatedAt
+            FROM comments
+            WHERE postId = ` + postId.id + ` AND parentId IS NULL`)
+            .map(comments => {
+                return  {
+                    id: comments.id,
+                    text: comments.text,
+                    createdAt: comments.createdAt,
+                    updatedAt: comments.updatedAt,
+                    replies: this.getChildComments(comments.id, levels)
+                }
+            });
+    }
 }
 
 module.exports = RedditAPI;
-    
- 
+
+// In the reddit.js API, add a getCommentsForPost(postId, levels) function. It should return a thread of comments in an array. 
+// The array should contain the top-level comments, and each comment can optionally have a replies array. This array will contain 
+// the comments that are replies to the current one.
+
+// We can do this by using a recursive function. The steps will be like this:
+
+// Retrieve the top-level comments for a given post ID. These are the ones where parent_id is NULL.
+// Gather up all the unique IDs of the top-level comments, and retrieve those comments where the parentId is equal to one of those IDs
+// Keep going until either you have no more comments at a certain level, or you have reached level levels of replies.
 
 
-// //createVote(vote) {
-//     if (vote.voteDirection !== 1 || vote.voteDirection !== -1 || vote.voteDirection !== 0) {
-//         return "This is not a valid vote";
-//     }
-//     else {
-//         return this.conn.query(
-//             `
-//             INSERT INTO votes (postId, userId, voteDirection)
-//             VALUES (?, ?, ?)
-//             ON DUPLICATE KEY UPDATE voteDirection=?`, // fourth ?, need fourth entry in array even if already assigned earlier?
-//             [vote.postId, vote.userId, vote.voteDirection, vote.voteDirection]);
-//     }
-// }
+    // getSubreddits()
+    //     .then(subredditNames => {
+    //         subredditNames.forEach(subredditName => {
+    //             var subId;
+    //             myReddit.createSubreddit({name: subredditName})
+    //                 .then(subredditId => {
+    //                     subId = subredditId;
+    //                     return getPostsForSubreddit(subredditName)
+    //                 })
+    //                 .then(posts => {
+    //                     posts.forEach(post => {
+    //                         var userIdPromise;
+    //                         if (users[post.user]) {
+    //                             userIdPromise = Promise.resolve(users[post.user]);
+    //                         }
+    //                         else {
+    //                             userIdPromise = myReddit.createUser({
+    //                                 username: post.user,
+    //                                 password: 'abc123'
+    //                             })
+    //                             .catch(err => {
+    //                                 return users[post.user];
+    //                             })
+    //                         }
 
-//  query 
-
-      `SELECT p.id AS pId, p.title, p.url, p.createdAt AS PostCreation, p.updatedAt AS PostUpdate, p.userId, 
-            u.id AS uId, u.username, u.createdAt AS UserCreation, u.updatedAt AS UserUpdate,
-            s.id AS sId, s.name AS subredditName, s.decription, s.createdAt AS subredditCreation, s.updatedAt AS subredditUpdate
-            postId as vpostId, SUM(voteDirection) 
-            FROM posts p
-            INNER JOIN users u ON p.userId = u.id
-            INNER JOIN subreddits s ON p.subredditId = s.id
-            INNER JOIN  votes v ON pId = vpostId
-            ORDER BY voteScore DESC`
-            
+    //                         userIdPromise.then(userId => {
+    //                             users[post.user] = userId;
+    //                             return myReddit.createPost({
+    //                                 subredditId: subId,
+    //                                 userId: userId,
+    //                                 title: post.title,
+    //                                 url: post.url
+    //                             });
+    //                         });
+    //                     });
+    //                 });
+    //         });
+    //     });

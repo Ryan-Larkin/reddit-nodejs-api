@@ -40,6 +40,29 @@ function getPostsForSubreddit(subredditName) {
         );
 }
 
+function getCommentsForCrawler(postUrl) {
+    return request(postUrl + ".json")
+        .then(response => {
+            var result = JSON.parse(response);
+            
+            return result.data.children
+                .filter(comments => {
+                    return !comments.kind === 't3';
+                })
+                .map(filteredComments => {
+                    // need functions to do queries with the name to find the ID? Create a new user instead?
+                    // need functions to change the ids into ints usable by our database?
+                    return {
+                        userId: filteredComments.data.author, // need an id, not a name
+                        postId: filteredComments.data.id, // returns something like dg91964, can't have that
+                        parentId: filteredComments.data.parentId, // returns something like t3_65bvqe, need to chang
+                        text: filteredComments.data.body
+                        // replies: ?
+                    };
+                });
+        });
+}
+
 function crawl() {
     // create a connection to the DB
     var connection = mysql.createPool({
@@ -108,5 +131,5 @@ function crawl() {
                     });
             });
         });
-        
 }
+crawl();
