@@ -40,6 +40,35 @@ function getPostsForSubreddit(subredditName) {
         );
 }
 
+function checkIdFromAuthor(author) {
+    var query = this.conn.query(
+        `
+        SELECT username 
+        FROM users
+        WHERE username = ` + author)
+        .then(users => {
+            if (users.length > 0) {
+                
+            }
+        })
+}
+
+function checkPostFromTitle(title) {
+    var query = this.conn.query(
+        `
+        SELECT id
+        FROM posts
+        WHERE title = ` + title);
+    
+    if (!query) {
+        
+    }
+}
+
+function checkCommentParent(postid) {
+    // how to link child comments to parent comments without using reddit's IDs
+}
+
 function getCommentsForCrawler(postUrl) {
     return request(postUrl + ".json")
         .then(response => {
@@ -47,16 +76,19 @@ function getCommentsForCrawler(postUrl) {
             
             return result.data.children
                 .filter(comments => {
-                    return !comments.kind === 't3';
+                    return comments.kind === 't1';
                 })
-                .map(filteredComments => {
+                .map(filteredComment => {
                     // need functions to do queries with the name to find the ID? Create a new user instead?
                     // need functions to change the ids into ints usable by our database?
+                    
+                    
                     return {
-                        userId: filteredComments.data.author, // need an id, not a name
-                        postId: filteredComments.data.id, // returns something like dg91964, can't have that
-                        parentId: filteredComments.data.parentId, // returns something like t3_65bvqe, need to chang
-                        text: filteredComments.data.body
+                        userId: filteredComment.data.author, // need an id, not a name
+                        postId: filteredComment.data.link_id, // need to convert to our database's post id
+                        // return post title instead here in the fucntion
+                        parentId: filteredComment.data.parentId, // returns something like t3_65bvqe, need to chang
+                        text: filteredComment.data.body
                         // replies: ?
                     };
                 });

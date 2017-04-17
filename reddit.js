@@ -73,7 +73,7 @@ class RedditAPI {
             INNER JOIN users u ON p.userId = u.id
             INNER JOIN subreddits s ON p.subredditId = s.id
             LEFT JOIN votes v ON p.id = v.postId
-            GROUP BY vPId ORDER BY voteScore DESC`
+            GROUP BY VotesPostId ORDER BY VoteScore DESC`
             // Check query
     
             // Now that we have voting, we need to add the voteScore of each post by doing an extra JOIN to the votes table, grouping by postId, and doing a 
@@ -182,7 +182,7 @@ class RedditAPI {
                 text: subcomments.text,
                 createdAt: subcomments.createdAt,
                 updatedAt: subcomments.updatedAt,
-                replies: this.getChildComments(subcomments.id, levels-1)
+                replies: levels > 0 ? this.getChildComments(subcomments.id, levels-1) : [] // should this be > -1 instead?
             };
         });
     }

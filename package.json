@@ -12,6 +12,9 @@
   "dependencies": {
     "bcrypt": "^0.8.6",
     "bcrypt-as-promised": "^1.1.0",
-    "promise-mysql": "^3.0.1"
+    "body-parser": "^1.17.1",
+    "express": "^4.15.2",
+    "promise-mysql": "^3.0.1",
+    "pug": "^2.0.0-beta11"
   }
 }
