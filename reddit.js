@@ -73,7 +73,7 @@ class RedditAPI {
             INNER JOIN users u ON p.userId = u.id
             INNER JOIN subreddits s ON p.subredditId = s.id
             LEFT JOIN votes v ON p.id = v.postId
-            GROUP BY PostsId ORDER BY VoteScore DESC`
+            GROUP BY PostsId ORDER BY VoteScore DESC LIMIT 25`
             // Check query
     
             // Now that we have voting, we need to add the voteScore of each post by doing an extra JOIN to the votes table, grouping by postId, and doing a 
