@@ -68,12 +68,12 @@ class RedditAPI {
             SELECT p.id AS PostsId, p.title AS PostTitle, p.url AS PostURL, p.createdAt AS PostCreation, p.updatedAt AS PostUpdate, p.userId AS PostsUserId, 
             u.id AS UsersId, u.username AS Username, u.createdAt AS UserCreation, u.updatedAt AS UserUpdate,
             s.id AS SubredditsId, s.name AS SubredditName, s.description AS SubredditDescription, s.createdAt AS subredditCreation, s.updatedAt AS subredditUpdate,
-            v.postId AS VotesPostId, v.userId AS VotesUserId, SUM(v.voteDirection) AS VoteScore
+            SUM(v.voteDirection) AS VoteScore
             FROM posts p
             INNER JOIN users u ON p.userId = u.id
             INNER JOIN subreddits s ON p.subredditId = s.id
             LEFT JOIN votes v ON p.id = v.postId
-            GROUP BY VotesPostId ORDER BY VoteScore DESC`
+            GROUP BY PostsId ORDER BY VoteScore DESC`
             // Check query
     
             // Now that we have voting, we need to add the voteScore of each post by doing an extra JOIN to the votes table, grouping by postId, and doing a 
@@ -92,6 +92,7 @@ class RedditAPI {
                 "createdAt": post.PostCreation,
                 "updatedAt": post.PostUpdate,
                 "userId": post.PostsUserId,
+                "voteScore": post.VoteScore,
                 "user": {
                     "id": post.UsersId,
                     "username": post.Username,
@@ -104,11 +105,6 @@ class RedditAPI {
                     "description": post.SubredditDescription,
                     "createdAt": post.subredditCreation,
                     "updatedAt": post.subredditUpdate 
-                },
-                "votes": {
-                    "userId": post.VotesUserId,
-                    "postId": post.VotesPostId,
-                    "voteScore": post.VoteScore
                 }
             };
         });
